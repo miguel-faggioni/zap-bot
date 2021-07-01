@@ -53,16 +53,19 @@ class DownloadFromReddit:
     # open the browser
     def setUp(self):
         options = Options()
-        options.headless = True
+        #options.headless = True
         self.browser = webdriver.Firefox(self.profilePath, options=options)
 
     # close browser
     def cleanUp(self):
+        self.browser.close()
         self.browser.quit()
 
     # disable the style of the subreddit
     def disableSubStyle(self):
-        self.browser.find_element(By.ID, 'res-style-checkbox').click()
+        id = 'res-style-checkbox'
+        WebDriverWait(self.browser, 10).until(lambda x: x.find_element(By.ID, css))
+        self.browser.find_element(By.ID, id).click()
 
     # get the url for a given subreddit, or for a random one
     def getSubredditUrl(self, subreddit = None):
@@ -92,6 +95,12 @@ class DownloadFromReddit:
         url = source.get_attribute('href')
         return url
 
+    def getPostTitle(self, post):
+        css = 'p.title'
+        WebDriverWait(post, 10).until(lambda x: x.find_element(By.CSS_SELECTOR, css))        
+        title = post.find_element(By.CSS_SELECTOR,css).text
+        return title
+    
     def nextPage(self):
         css = 'span.next-button'
         self.browser.execute_script('window.scrollTo(0,document.body.scrollHeight)')
@@ -156,7 +165,7 @@ if __name__ == '__main__':
                 button = b.getExpandoButton(post)
                 button.click()
                 # get its title
-                title = post.find_element(By.CSS_SELECTOR,'p.title').text
+                title = b.getPostTitle(post)
                 print(' >> {}'.format(title))
                 # get the source url
                 url = b.getVideoSource(post)
