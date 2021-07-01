@@ -64,7 +64,7 @@ class DownloadFromReddit:
     # disable the style of the subreddit
     def disableSubStyle(self):
         id = 'res-style-checkbox'
-        WebDriverWait(self.browser, 10).until(lambda x: x.find_element(By.ID, css))
+        WebDriverWait(self.browser, 10).until(lambda x: x.find_element(By.ID, id))
         self.browser.find_element(By.ID, id).click()
 
     # get the url for a given subreddit, or for a random one
@@ -87,19 +87,27 @@ class DownloadFromReddit:
         css = 'a.expando-button.collapsed.video'
         WebDriverWait(post, 10).until(lambda x: x.find_element(By.CSS_SELECTOR, css))
         return post.find_element(By.CSS_SELECTOR, css)
-        
-    def getVideoSource(self, post):
-        css = 'a.res-video-link.res-video-source'
+
+    def getPostOrigin(self, post):
+        css = 'p.title > span.domain > a'
         WebDriverWait(post, 10).until(lambda x: x.find_element(By.CSS_SELECTOR, css))
-        source = post.find_element(By.CSS_SELECTOR,css)
-        url = source.get_attribute('href')
-        return url
+        return post.find_element(By.CSS_SELECTOR,css).text
+    
+    def getVideoSource(self, post):
+        origin = self.getPostOrigin(post)
+        if 'youtube' in origin.replace('.',''):
+            css = 'iframe'
+            attribute = 'src'
+        else:
+            css = 'a.res-video-link.res-video-source'
+            attribute = 'href'
+        WebDriverWait(post, 10).until(lambda x: x.find_element(By.CSS_SELECTOR, css))
+        return post.find_element(By.CSS_SELECTOR,css).get_attribute(attribute)
 
     def getPostTitle(self, post):
-        css = 'p.title'
+        css = 'p.title > a.title'
         WebDriverWait(post, 10).until(lambda x: x.find_element(By.CSS_SELECTOR, css))        
-        title = post.find_element(By.CSS_SELECTOR,css).text
-        return title
+        return post.find_element(By.CSS_SELECTOR,css).text
     
     def nextPage(self):
         css = 'span.next-button'
