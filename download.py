@@ -19,6 +19,7 @@ import shutil
 import os
 
 DOWNLOAD_ARCHIVE_FILE = 'videos/download.archive'
+PROFILE_PATH = '/home/miguel/.mozilla/firefox/y559xu9q.selenium'
 
 # highlight a given element for debugging
 def highlight(element):
@@ -48,7 +49,7 @@ class DownloadFromReddit:
             'nonononoyes',
             'yesyesyesdamn'
         ]
-        self.profilePath = '/home/miguel/.mozilla/firefox/y559xu9q.selenium'
+        self.profilePath = PROFILE_PATH
         
     # open the browser
     def setUp(self):
@@ -157,7 +158,7 @@ if __name__ == '__main__':
 
     # choose subreddit
     subreddit = random.choice(b.subreddits)
-    print(' >>> Going on r/{}'.format(subreddit))
+    print(' ----> Going on r/{}'.format(subreddit))
     b.browser.get(b.getSubredditUrl(subreddit))
     b.disableSubStyle()
 
@@ -165,19 +166,20 @@ if __name__ == '__main__':
     while len(videosDownloaded) < howManyVideosToDownload:
         # get all video posts on the page
         posts = b.getVideoPosts()
-        print(' >>> Found {} videos'.format(len(posts)))
+        print(' ----> Found {} videos'.format(len(posts)))
         for index, post in enumerate(posts):
-            print(' >> Post {}:'.format(index+1))
+            print('')
+            print(' --> Post {}:'.format(index+1))
             try:
                 # expand the video
                 button = b.getExpandoButton(post)
                 button.click()
                 # get its title
                 title = b.getPostTitle(post)
-                print(' >> {}'.format(title))
+                print(' --> {}'.format(title))
                 # get the source url
                 url = b.getVideoSource(post)
-                #print(' >> {}'.format(url))
+                print(' --> {}'.format(url))
                 # download the video
                 downloadedVideo = b.download(url,title)
                 videosDownloaded.append(downloadedVideo)
@@ -185,7 +187,7 @@ if __name__ == '__main__':
                 # collapse the video
                 button.click()
             except Exception as e:
-                print(' >> FAIL'.format(title))
+                print(' > FAIL'.format(title))
                 print(e)
         # go to next page and repeat until the quota is met
         print(' >>> Going to next page')
