@@ -124,7 +124,7 @@ class DownloadFromReddit:
         self.browser.find_element(By.CSS_SELECTOR, css).click()
 
     # download a video and saves it to `videos/<name>.mp4`
-    def download(self, url, name):
+    def download(self, url, name, skipExisting=False):
         # check if file already exists
         destination = '{}/videos/{}.mp4'.format(os.getcwd(), name)
         if os.path.isfile(destination):
@@ -132,6 +132,9 @@ class DownloadFromReddit:
             downloadFile = False
         else:
             downloadFile = True
+        # return early 
+        if downloadFile is False and skipExisting is True:
+            return None
         # download options
         ydl_opts = {
             # https://github.com/ytdl-org/youtube-dl/blob/3e4cedf9e8cd3157df2457df7274d0c842421945/youtube_dl/YoutubeDL.py#L137-L312
@@ -142,63 +145,82 @@ class DownloadFromReddit:
             'download_archive': '{}/{}'.format(os.getcwd(), DOWNLOAD_ARCHIVE_FILE)
         }
         # download the file
-        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-            result = ydl.extract_info(
-                url,
-                download=downloadFile
-            )
-        video = result
+        try:
+            with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+                result = ydl.extract_info(
+                    url,
+                    download=downloadFile
+                )
+            video = result
+        except Exception as e:
+            print(e)
+            return None
         # move file to `videos/`
         if downloadFile:
             source = '{}/{}'.format(os.getcwd(), 'video.mp4')
             shutil.move(source, destination)
+        # return the video
         return video
 
+    def downloadVideos(self, subreddit=None, howMany=20, skipExisting=False):
+        # if no subreddit was received, choose a random one
+        if subreddit is None:
+            subreddit = random.choice(self.subreddits)
+
+        # go to subreddit
+        print(' ----> Going on r/{}'.format(subreddit))
+        self.browser.get(self.getSubredditUrl(subreddit))
+
+        # disable the custom stlyle
+        self.disableSubStyle()
+
+        # while the quota isn't met
+        videosDownloaded = []
+        while len(videosDownloaded) < howMany:
+            # get all video posts on the page
+            posts = self.getVideoPosts()
+            print(' ----> Found {} videos'.format(len(posts)))
+            for index, post in enumerate(posts):
+                print('')
+                print(' --> Post {}:'.format(index + 1))
+                try:
+                    # expand the video
+                    button = self.getExpandoButton(post)
+                    button.click()
+                    # get its title
+                    title = self.getPostTitle(post)
+                    print(' --> {}'.format(title))
+                    # get the source url
+                    url = self.getVideoSource(post)
+                    print(' --> {}'.format(url))
+                    # download the video
+                    downloadedVideo = self.download(url, title, skipExisting=skipExisting)
+                    if downloadedVideo is not None:
+                        videosDownloaded.append(downloadedVideo)
+                    print(' > {}/{} videos downloaded'.format(len(videosDownloaded), howMany))
+                    # collapse the video
+                    button.click()
+                except Exception as e:
+                    print(' > FAIL'.format(title))
+                    print(e)
+
+            # if the quota was met
+            if len(videosDownloaded) < howMany:
+                return
+            
+            # go to next page and repeat until the quota is met
+            print(' ----> Going to next page')
+            self.nextPage()
+
+        
 
 if __name__ == '__main__':
-    howManyVideosToDownload = 20
-    videosDownloaded = []
-
     # setup
-    b = DownloadFromReddit()
-    b.setUp()
+    bot = DownloadFromReddit()
+    bot.setUp()
 
-    # choose subreddit
-    subreddit = random.choice(b.subreddits)
-    print(' ----> Going on r/{}'.format(subreddit))
-    b.browser.get(b.getSubredditUrl(subreddit))
-    b.disableSubStyle()
-
-    # while the quota isn't met
-    while len(videosDownloaded) < howManyVideosToDownload:
-        # get all video posts on the page
-        posts = b.getVideoPosts()
-        print(' ----> Found {} videos'.format(len(posts)))
-        for index, post in enumerate(posts):
-            print('')
-            print(' --> Post {}:'.format(index + 1))
-            try:
-                # expand the video
-                button = b.getExpandoButton(post)
-                button.click()
-                # get its title
-                title = b.getPostTitle(post)
-                print(' --> {}'.format(title))
-                # get the source url
-                url = b.getVideoSource(post)
-                print(' --> {}'.format(url))
-                # download the video
-                downloadedVideo = b.download(url, title)
-                videosDownloaded.append(downloadedVideo)
-                print(' > {}/{} videos downloaded'.format(len(videosDownloaded), howManyVideosToDownload))
-                # collapse the video
-                button.click()
-            except Exception as e:
-                print(' > FAIL'.format(title))
-                print(e)
-        # go to next page and repeat until the quota is met
-        print(' ----> Going to next page')
-        b.nextPage()
+    # download videos
+    bot.downloadVideos(howMany=5,skipExisting=True)
 
     # close browser
-    b.cleanUp()
+    bot.cleanUp()
