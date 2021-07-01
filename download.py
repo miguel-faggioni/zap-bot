@@ -10,7 +10,7 @@ Usage example:
 import random
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
-from selenium.webdriver.support.wait import WebDriverWait 
+from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 import time
@@ -25,12 +25,14 @@ PROFILE_PATH = '/home/miguel/.mozilla/firefox/y559xu9q.selenium'
 def highlight(element):
     """Highlights (blinks) a Selenium Webdriver element"""
     driver = element._parent
+
     def apply_style(s):
-        driver.execute_script("arguments[0].setAttribute('style', arguments[1]);",element, s)
+        driver.execute_script("arguments[0].setAttribute('style', arguments[1]);", element, s)
     original_style = element.get_attribute('style')
     apply_style("background: yellow; border: 2px solid red;")
     time.sleep(.3)
     apply_style(original_style)
+
 
 class DownloadFromReddit:
     def __init__(self):
@@ -50,7 +52,7 @@ class DownloadFromReddit:
             'yesyesyesdamn'
         ]
         self.profilePath = PROFILE_PATH
-        
+
     # open the browser
     def setUp(self):
         options = Options()
@@ -69,10 +71,10 @@ class DownloadFromReddit:
         self.browser.find_element(By.ID, id).click()
 
     # get the url for a given subreddit, or for a random one
-    def getSubredditUrl(self, subreddit = None):
-        if subreddit == None:
+    def getSubredditUrl(self, subreddit=None):
+        if subreddit is None:
             subreddit = random.choice(self.subreddits)
-        return '{}r/{}'.format(self.baseUrl,subreddit)
+        return '{}r/{}'.format(self.baseUrl, subreddit)
 
     # get all video posts on the page
     def getVideoPosts(self):
@@ -80,45 +82,51 @@ class DownloadFromReddit:
         try:
             WebDriverWait(self.browser, 10).until(lambda x: x.find_element(By.CSS_SELECTOR, css))
             buttons = self.browser.find_elements(By.CSS_SELECTOR, css)
-            return [ button.find_element(By.XPATH, './../..') for button in buttons ]
+            return [button.find_element(By.XPATH, './../..') for button in buttons]
         except Exception as e:
             return []
 
+    # get the element of the expando button of a post
     def getExpandoButton(self, post):
         css = 'a.expando-button.collapsed.video'
         WebDriverWait(post, 10).until(lambda x: x.find_element(By.CSS_SELECTOR, css))
         return post.find_element(By.CSS_SELECTOR, css)
-
+    
+    # get the origin of a post
     def getPostOrigin(self, post):
         css = 'p.title > span.domain > a'
         WebDriverWait(post, 10).until(lambda x: x.find_element(By.CSS_SELECTOR, css))
-        return post.find_element(By.CSS_SELECTOR,css).text
-    
+        return post.find_element(By.CSS_SELECTOR, css).text
+
+    # get the url source of a video post
     def getVideoSource(self, post):
         origin = self.getPostOrigin(post)
-        if 'youtube' in origin.replace('.',''):
+        if 'youtube' in origin.replace('.', ''):
             css = 'iframe'
             attribute = 'src'
         else:
             css = 'a.res-video-link.res-video-source'
             attribute = 'href'
         WebDriverWait(post, 10).until(lambda x: x.find_element(By.CSS_SELECTOR, css))
-        return post.find_element(By.CSS_SELECTOR,css).get_attribute(attribute)
+        return post.find_element(By.CSS_SELECTOR, css).get_attribute(attribute)
 
+    # get the title of a post
     def getPostTitle(self, post):
         css = 'p.title > a.title'
-        WebDriverWait(post, 10).until(lambda x: x.find_element(By.CSS_SELECTOR, css))        
-        return post.find_element(By.CSS_SELECTOR,css).text
-    
+        WebDriverWait(post, 10).until(lambda x: x.find_element(By.CSS_SELECTOR, css))
+        return post.find_element(By.CSS_SELECTOR, css).text
+
+    # go to the next page
     def nextPage(self):
         css = 'span.next-button'
         self.browser.execute_script('window.scrollTo(0,document.body.scrollHeight)')
         WebDriverWait(self.browser, 10).until(lambda x: x.find_element(By.CSS_SELECTOR, css))
-        self.browser.find_element(By.CSS_SELECTOR,css).click()
-        
+        self.browser.find_element(By.CSS_SELECTOR, css).click()
+
+    # download a video and saves it to `videos/<name>.mp4`
     def download(self, url, name):
         # check if file already exists
-        destination = '{}/videos/{}.mp4'.format(os.getcwd(),name)
+        destination = '{}/videos/{}.mp4'.format(os.getcwd(), name)
         if os.path.isfile(destination):
             print(' > File already exists, not downloading it again')
             downloadFile = False
@@ -131,7 +139,7 @@ class DownloadFromReddit:
             'format': 'mp4',
             'nooverwrites': True,
             'quiet': True,
-            'download_archive': '{}/{}'.format(os.getcwd(),DOWNLOAD_ARCHIVE_FILE)
+            'download_archive': '{}/{}'.format(os.getcwd(), DOWNLOAD_ARCHIVE_FILE)
         }
         # download the file
         with youtube_dl.YoutubeDL(ydl_opts) as ydl:
@@ -142,12 +150,11 @@ class DownloadFromReddit:
         video = result
         # move file to `videos/`
         if downloadFile:
-            source = '{}/{}'.format(os.getcwd(),'video.mp4')
-            shutil.move(source,destination)
+            source = '{}/{}'.format(os.getcwd(), 'video.mp4')
+            shutil.move(source, destination)
         return video
 
 
-        
 if __name__ == '__main__':
     howManyVideosToDownload = 20
     videosDownloaded = []
@@ -169,7 +176,7 @@ if __name__ == '__main__':
         print(' ----> Found {} videos'.format(len(posts)))
         for index, post in enumerate(posts):
             print('')
-            print(' --> Post {}:'.format(index+1))
+            print(' --> Post {}:'.format(index + 1))
             try:
                 # expand the video
                 button = b.getExpandoButton(post)
@@ -181,16 +188,16 @@ if __name__ == '__main__':
                 url = b.getVideoSource(post)
                 print(' --> {}'.format(url))
                 # download the video
-                downloadedVideo = b.download(url,title)
+                downloadedVideo = b.download(url, title)
                 videosDownloaded.append(downloadedVideo)
-                print(' > {}/{} videos downloaded'.format(len(videosDownloaded),howManyVideosToDownload))
+                print(' > {}/{} videos downloaded'.format(len(videosDownloaded), howManyVideosToDownload))
                 # collapse the video
                 button.click()
             except Exception as e:
                 print(' > FAIL'.format(title))
                 print(e)
         # go to next page and repeat until the quota is met
-        print(' >>> Going to next page')
+        print(' ----> Going to next page')
         b.nextPage()
 
     # close browser
