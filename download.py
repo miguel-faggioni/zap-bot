@@ -9,9 +9,14 @@ Usage example:
 
 import random
 from selenium import webdriver
+from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.support.wait import WebDriverWait 
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 import time
+import youtube_dl
+import shutil
+import os
 
 # highlight a given element for debugging
 def highlight(element):
@@ -45,7 +50,9 @@ class DownloadFromReddit:
         
     # open the browser
     def setUp(self):
-        self.browser = webdriver.Firefox(self.profilePath)
+        options = Options()
+        #options.headless = True
+        self.browser = webdriver.Firefox(self.profilePath, options=options)
 
     # close browser
     def cleanUp(self):
@@ -67,34 +74,89 @@ class DownloadFromReddit:
         try:
             WebDriverWait(self.browser, 10).until(lambda x: x.find_element(By.CSS_SELECTOR, css))
             buttons = self.browser.find_elements(By.CSS_SELECTOR, css)
-            return [ button.find_element(By.XPATH, "./../..") for button in buttons ]
+            return [ button.find_element(By.XPATH, './../..') for button in buttons ]
         except Exception as e:
             return []
-        
+
+    def nextPage(self):
+        css = 'span.next-button'
+        self.browser.execute_script('window.scrollTo(0,document.body.scrollHeight)')
+        WebDriverWait(self.browser, 10).until(lambda x: x.find_element(By.CSS_SELECTOR, css))
+        self.browser.find_element(By.CSS_SELECTOR,css).click()
+
+    def download(self, url, name):
+        # check if file already exists
+        destination = '{}/videos/{}.mp4'.format(os.getcwd(),name)
+        if os.path.isfile(destination):
+            print(' > File already exists, not downloading it again')
+            downloadFile = False
+        else:
+            downloadFile = True
+        # download options
+        ydl_opts = {
+            # https://github.com/ytdl-org/youtube-dl/blob/3e4cedf9e8cd3157df2457df7274d0c842421945/youtube_dl/YoutubeDL.py#L137-L312
+            'outtmpl': 'video.mp4',
+            'format': 'mp4',
+            'nooverwrites': True,
+            'quiet': True
+        }
+        # download the file
+        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+            result = ydl.extract_info(
+                url,
+                download=downloadFile
+            )
+        video = result
+        # move file to `videos/`
+        source = '{}/{}'.format(os.getcwd(),'video.mp4')
+        shutil.move(source,destination)
+        return video
+
 
         
 if __name__ == '__main__':
+    howManyVideosToDownload = 20
+    videosDownloaded = []
+
+    # setup
     b = DownloadFromReddit()
     b.setUp()
+
+    # choose subreddit
     subreddit = random.choice(b.subreddits)
     print(' >>> Going on r/{}'.format(subreddit))
     b.browser.get(b.getSubredditUrl(subreddit))
     b.disableSubStyle()
-    posts = b.getVideoPosts()
-    print(' >>> Found {} videos'.format(len(posts)))
-    for index, post in enumerate(posts):
-        print(' >> Post {}:'.format(index+1))
-        try:
-            button = post.find_element(By.CSS_SELECTOR, 'a.expando-button.collapsed.video')
-            button.click()
-            title = post.find_element(By.CSS_SELECTOR,'p.title').text
-            print(' >> {}'.format(title))
-            source = post.find_element(By.CSS_SELECTOR,'a.res-video-link.res-video-source')
-            url = source.get_attribute('href')
-            print(' >> {}'.format(url))
-            button.click()
-        except Exception as e:
-            print(' >> FAIL'.format(title))
-            print(e)
-        
+
+    # while the quota isn't met
+    while len(videosDownloaded) < howManyVideosToDownload:
+        # get all video posts on the page
+        posts = b.getVideoPosts()
+        print(' >>> Found {} videos'.format(len(posts)))
+        for index, post in enumerate(posts):
+            print(' >> Post {}:'.format(index+1))
+            try:
+                # expand the video
+                button = post.find_element(By.CSS_SELECTOR, 'a.expando-button.collapsed.video')
+                button.click()
+                # get its title
+                title = post.find_element(By.CSS_SELECTOR,'p.title').text
+                print(' >> {}'.format(title))
+                # get the source url
+                source = post.find_element(By.CSS_SELECTOR,'a.res-video-link.res-video-source')
+                url = source.get_attribute('href')
+                print(' >> {}'.format(url))
+                # download the video
+                downloadedVideo = b.download(url,title)
+                videosDownloaded.append(downloadedVideo)
+                print(' > {}/{}'.format(len(videosDownloaded),howManyVideosToDownload))
+                # collapse the video
+                button.click()
+            except Exception as e:
+                print(' >> FAIL'.format(title))
+        # go to next page and repeat until the quota is met
+        print(' >>> Going to next page')
+        b.nextPage()
+
+    # close browser
     b.cleanUp()
