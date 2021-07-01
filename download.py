@@ -42,6 +42,7 @@ class DownloadFromReddit:
             'nonoyesyesnonononono',
             'yesyesyesyesno',
             'yesyesyesno',
+            'nononono',
             # wtf
             'nonononowaitwhat',
             'maybemaybemaybe',
@@ -156,8 +157,8 @@ class DownloadFromReddit:
             print(e)
             return None
         # move file to `videos/`
-        if downloadFile:
-            source = '{}/{}'.format(os.getcwd(), 'video.mp4')
+        source = '{}/{}'.format(os.getcwd(), 'video.mp4')
+        if downloadFile and os.path.isfile(source):
             shutil.move(source, destination)
         # return the video
         return video
@@ -206,7 +207,7 @@ class DownloadFromReddit:
 
             # if the quota was met
             if len(videosDownloaded) < howMany:
-                return
+                return videosDownloaded
             
             # go to next page and repeat until the quota is met
             print(' ----> Going to next page')
