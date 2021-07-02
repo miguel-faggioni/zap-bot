@@ -17,10 +17,12 @@ import time
 import youtube_dl
 import shutil
 import os
+from sqlite import *
 
 DOWNLOAD_ARCHIVE_FILE = 'download.archive'
 PROFILE_PATH = '/home/miguel/.mozilla/firefox/y559xu9q.selenium'
 VIDEO_FOLDER = 'videos'
+AUX_FOLDER = 'aux'
 
 # highlight a given element for debugging
 def highlight(element):
@@ -50,12 +52,14 @@ class DownloadFromReddit:
             'maybemaybemaybe',
             'unexpected',
             'WTF',
+            'bestoftheinternet',
             # wins
             'woahdude',
             'nonononoyes',
             'yesyesyesdamn'
         ]
         self.profilePath = PROFILE_PATH
+        self.db = Sqlite()
 
     # open the browser
     def setUp(self):
@@ -67,6 +71,7 @@ class DownloadFromReddit:
     def cleanUp(self):
         self.browser.close()
         self.browser.quit()
+        self.db.cleanUp()
 
     # disable the style of the subreddit
     def disableSubStyle(self):
@@ -130,7 +135,7 @@ class DownloadFromReddit:
     # download a video and saves it to `videos/<name>.mp4`
     def download(self, url, name, skipExisting=False):
         # check if file already exists
-        destination = os.path.join(os.getcwd(), VIDEO_FOLDER, name)
+        destination = os.path.join(os.getcwd(), VIDEO_FOLDER, name+'.mp4')
         if os.path.isfile(destination):
             print(' > File already exists, not downloading it again')
             downloadFile = False
@@ -146,7 +151,7 @@ class DownloadFromReddit:
             'format': 'mp4',
             'nooverwrites': True,
             #'quiet': True,
-            'download_archive': os.path.join(os.getcwd(), VIDEO_FOLDER, DOWNLOAD_ARCHIVE_FILE)
+            'download_archive': os.path.join(os.getcwd(), AUX_FOLDER, DOWNLOAD_ARCHIVE_FILE)
         }
         # download the file
         try:
@@ -163,8 +168,8 @@ class DownloadFromReddit:
         source = os.path.join(os.getcwd(), 'video.mp4')
         if downloadFile and os.path.isfile(source):
             shutil.move(source, destination)
-        # return the video
         video['filepath'] = destination
+        # return the video
         return video
 
     def downloadVideos(self, subreddit=None, howMany=20, skipExisting=False):
@@ -205,6 +210,10 @@ class DownloadFromReddit:
                     print(' > {}/{} videos downloaded'.format(len(videosDownloaded), howMany))
                     # collapse the video
                     button.click()
+                    # save to DB
+                    self.db.run('''
+                    INSERT INTO videos VALUES ('{link}','{title}',{width},{height},null,'{filepath}',null)
+                    '''.format(link=url,title=title,width=downloadedVideo['width'],height=downloadedVideo['height'],filepath=downloadedVideo['filepath']))
                 except Exception as e:
                     print(' > FAIL')
                     print(e)
@@ -225,12 +234,15 @@ if __name__ == '__main__':
     bot = DownloadFromReddit()
     bot.setUp()
 
+    '''
     # download videos
     videos = []
     step = 10
     howManyTotal = 50
     for count in range(0,howManyTotal,step):
         videos = videos + bot.downloadVideos(howMany=step,skipExisting=True)
+    '''
+    videos = bot.downloadVideos(howMany=1,skipExisting=False)
         
     # close browser
     bot.cleanUp()

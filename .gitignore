@@ -1,6 +1,7 @@
 __pycache__/
 
+aux/
 videos/
-video.mp4*
+*.mp4*
 
 *.log
