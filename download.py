@@ -222,34 +222,63 @@ class DownloadFromReddit:
         
 class VideoCompilation:
     def __init__(self, videos=[]):
-        self.videos = videos
+        self.clips = [ VideoFileClip(video['filepath']) for video in videos ]
+        print(' --> {} clips'.format(len(self.clips)))
 
-    def adjustSize(self, clip, height, width):
-        # get current dimensions
-        clipWidth,clipHeight = clip.size
-        # match the height
-        clip2 = clip.resize( height/clipHeight )
-        # add borders if needed
-        #TODO
+    def removeLongClips(self, max_clip_duration):
+        # max_clip_duration is in seconds
+        self.clips = [ clip for clip in self.clips if clip.duration <= max_clip_duration ]
+        print(' --> {} clips shorter than {} seconds'.format(len(self.clips),max_clip_duration))
+
+    def adjustSizes(self):
+        resizedClips = []
+        for clip in self.clips:
+            # get current dimensions and ratio
+            clipWidth,clipHeight = clip.size
+            ratio = clipWidth / clipHeight
+            # resize the clip
+            if ratio > (16/9):
+                clip2 = clip.resize(width=1920)
+            else:
+                clip2 = clip.resize(height=1080)
+            resizedClips.append(clip2)
+        self.clips = resizedClips
 
     def addSubtitle(self, clip, subtitle):
         pass
 
-    def save(self, clip, filename):
-        filepath = '{}/{}.mp4'.format(os.getcwd(),filename)
-        clip.write_videofile(filepath, codec='mpeg4')
+    def save(self, clip, filename, threads=1):
+        filepath = '{}/{}'.format(os.getcwd(),filename)
+        clip.write_videofile(filepath, codec='mpeg4', audio=True, threads=threads)
         return filepath
     
-    def createCompilation(self, videos):
-        compilation = concatenate_videoclips(videos, method='compose')
+    def createCompilation(self, max_total_time=None):
+        # max_total_time is in seconds
+        durations = [ clip.duration for clip in self.clips ]
+        total_time = sum(durations)
+
+        # keep only clips up to max total time
+        if max_total_time is not None and total_time > max_total_time:
+            partialTimes = list(itertools.accumulate(durations))
+            firstOverMax = [ duration > max for duration in partialTimes ].index(True)
+            clips = self.clips[:firstOverMax]
+        else:
+            clips = self.clips
+
+        print(' ----> Creating compilation with {} clips'.format(len(clips)))
             
+        # create compilation
+        compilation = concatenate_videoclips(clips, method='compose')
+        return compilation
+
+        
 if __name__ == '__main__':
     # setup
     bot = DownloadFromReddit()
     bot.setUp()
 
     # download videos
-    videos = bot.downloadVideos(howMany=5,skipExisting=False)
+    videos = bot.downloadVideos(howMany=50,skipExisting=False)
 
     # close browser
     bot.cleanUp()
@@ -257,7 +286,14 @@ if __name__ == '__main__':
     # start the compilation
     compilation = VideoCompilation(videos)
 
-    
+    # remove videos longer than 2min
+    compilation.removeLongClips(2*60)
 
-    
-videos = [{'width': 1280, 'height': 720, 'filepath': '/home/miguel/github/zap-bot/videos/i joined a minecraft server....mp4'}, {'width': 398, 'height': 224, 'filepath': '/home/miguel/github/zap-bot/videos/Driver realizes too late the brakes have stopped working.mp4'}, {'width': 1280, 'height': 720, 'filepath': '/home/miguel/github/zap-bot/videos/Disastrous moment brand new ship capsizes right after launch.mp4'}, {'width': 404, 'height': 720, 'filepath': '/home/miguel/github/zap-bot/videos/Friends out boating collide when one wants to show off..mp4'}, {'width': 384, 'height': 480, 'filepath': '/home/miguel/github/zap-bot/videos/boat took interesting turns.........mp4'}, {'width': 332, 'height': 720, 'filepath': '/home/miguel/github/zap-bot/videos/Cutting down a tree that ends up in the house.mp4'}, {'width': 1280, 'height': 718, 'filepath': '/home/miguel/github/zap-bot/videos/Truck vs train does not end well.mp4'}, {'width': 192, 'height': 240, 'filepath': '/home/miguel/github/zap-bot/videos/Cutting an iPhone battery.mp4'}]
+    # resize clips
+    compilation.adjustSizes()
+
+    # create compilation of up to 30min
+    video = compilation.createCompilation(30*60)
+
+    # save it
+    compilation.save(video,'teste.mp4',threads=2)
