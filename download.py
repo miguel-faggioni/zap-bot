@@ -17,6 +17,7 @@ import time
 import youtube_dl
 import shutil
 import os
+from moviepy.editor import *
 
 DOWNLOAD_ARCHIVE_FILE = 'videos/download.archive'
 PROFILE_PATH = '/home/miguel/.mozilla/firefox/y559xu9q.selenium'
@@ -43,10 +44,12 @@ class DownloadFromReddit:
             'yesyesyesyesno',
             'yesyesyesno',
             'nononono',
+            'Wellthatsucks',
             # wtf
             'nonononowaitwhat',
             'maybemaybemaybe',
             'unexpected',
+            'WTF',
             # wins
             'woahdude',
             'nonononoyes',
@@ -142,7 +145,7 @@ class DownloadFromReddit:
             'outtmpl': 'video.mp4',
             'format': 'mp4',
             'nooverwrites': True,
-            'quiet': True,
+            #'quiet': True,
             'download_archive': '{}/{}'.format(os.getcwd(), DOWNLOAD_ARCHIVE_FILE)
         }
         # download the file
@@ -161,6 +164,7 @@ class DownloadFromReddit:
         if downloadFile and os.path.isfile(source):
             shutil.move(source, destination)
         # return the video
+        video['filepath'] = destination
         return video
 
     def downloadVideos(self, subreddit=None, howMany=20, skipExisting=False):
@@ -212,16 +216,48 @@ class DownloadFromReddit:
             # go to next page and repeat until the quota is met
             print(' ----> Going to next page')
             self.nextPage()
+            
+        return videosDownloaded
 
         
+class VideoCompilation:
+    def __init__(self, videos=[]):
+        self.videos = videos
 
+    def adjustSize(self, clip, height, width):
+        # get current dimensions
+        clipWidth,clipHeight = clip.size
+        # match the height
+        clip2 = clip.resize( height/clipHeight )
+        # add borders if needed
+        #TODO
+
+    def addSubtitle(self, clip, subtitle):
+        pass
+
+    def save(self, clip, filename):
+        filepath = '{}/{}.mp4'.format(os.getcwd(),filename)
+        clip.write_videofile(filepath, codec='mpeg4')
+        return filepath
+    
+    def createCompilation(self, videos):
+        compilation = concatenate_videoclips(videos, method='compose')
+            
 if __name__ == '__main__':
     # setup
     bot = DownloadFromReddit()
     bot.setUp()
 
     # download videos
-    bot.downloadVideos(howMany=5,skipExisting=True)
+    videos = bot.downloadVideos(howMany=5,skipExisting=False)
 
     # close browser
     bot.cleanUp()
+
+    # start the compilation
+    compilation = VideoCompilation(videos)
+
+    
+
+    
+videos = [{'width': 1280, 'height': 720, 'filepath': '/home/miguel/github/zap-bot/videos/i joined a minecraft server....mp4'}, {'width': 398, 'height': 224, 'filepath': '/home/miguel/github/zap-bot/videos/Driver realizes too late the brakes have stopped working.mp4'}, {'width': 1280, 'height': 720, 'filepath': '/home/miguel/github/zap-bot/videos/Disastrous moment brand new ship capsizes right after launch.mp4'}, {'width': 404, 'height': 720, 'filepath': '/home/miguel/github/zap-bot/videos/Friends out boating collide when one wants to show off..mp4'}, {'width': 384, 'height': 480, 'filepath': '/home/miguel/github/zap-bot/videos/boat took interesting turns.........mp4'}, {'width': 332, 'height': 720, 'filepath': '/home/miguel/github/zap-bot/videos/Cutting down a tree that ends up in the house.mp4'}, {'width': 1280, 'height': 718, 'filepath': '/home/miguel/github/zap-bot/videos/Truck vs train does not end well.mp4'}, {'width': 192, 'height': 240, 'filepath': '/home/miguel/github/zap-bot/videos/Cutting an iPhone battery.mp4'}]
