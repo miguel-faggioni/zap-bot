@@ -148,7 +148,7 @@ class DownloadFromReddit:
         ydl_opts = {
             # https://github.com/ytdl-org/youtube-dl/blob/3e4cedf9e8cd3157df2457df7274d0c842421945/youtube_dl/YoutubeDL.py#L137-L312
             'outtmpl': 'video.mp4',
-            'format': 'mp4',
+            'format': 'bestvideo+bestaudio/best',
             'nooverwrites': True,
             #'quiet': True,
             'download_archive': os.path.join(os.getcwd(), AUX_FOLDER, DOWNLOAD_ARCHIVE_FILE)
@@ -212,8 +212,14 @@ class DownloadFromReddit:
                     button.click()
                     # save to DB
                     self.db.run('''
-                    INSERT INTO videos VALUES ('{link}','{title}',{width},{height},null,'{filepath}',null)
-                    '''.format(link=url,title=title,width=downloadedVideo['width'],height=downloadedVideo['height'],filepath=downloadedVideo['filepath']))
+                        INSERT INTO videos VALUES ( '{link}' , '{title}' , {width} , {height} , null , '{filepath}' , null )
+                    '''.format(
+                        link=url,
+                        title=title,
+                        width=downloadedVideo['width'],
+                        height=downloadedVideo['height'],
+                        filepath=downloadedVideo['filepath'])
+                    )
                 except Exception as e:
                     print(' > FAIL')
                     print(e)
@@ -242,7 +248,7 @@ if __name__ == '__main__':
     for count in range(0,howManyTotal,step):
         videos = videos + bot.downloadVideos(howMany=step,skipExisting=True)
     '''
-    videos = bot.downloadVideos(howMany=1,skipExisting=False)
+    videos = bot.downloadVideos(howMany=5,skipExisting=False)
         
     # close browser
     bot.cleanUp()
