@@ -66,4 +66,16 @@ if __name__ == '__main__':
     video = compilation.createCompilation(30*60)
 
     # save it
-    compilation.save(video,'first_compilation.mp4',threads=2)
+    compilation_filename = 'first_compilation.mp4'
+    compilation.save(video,compilation_filename,threads=2)
+
+    # update the videos on the DB
+    sql = Sqlite()
+    for video in videos:
+        filepath = video['filepath']
+        sql.run('''
+            UPDATE videos 
+            SET compilation = '{compilation}'
+            WHERE 
+                filepath = '{filepath}'
+        '''.format(compilation=compilation_filename,filepath=filepath))
