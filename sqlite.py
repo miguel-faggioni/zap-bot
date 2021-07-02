@@ -21,7 +21,13 @@ CREATE TABLE IF NOT EXISTS {}
 
 class Sqlite:
     def __init__(self):
+        def dict_factory(cursor, row):
+            d = {}
+            for idx, col in enumerate(cursor.description):
+                d[col[0]] = row[idx]
+            return d
         self.conn = sqlite3.connect(DB_FILE)
+        self.conn.row_factory = dict_factory
         self.cur = self.conn.cursor()
         self.cur.execute(TABLE_CREATION_SQL)
         self.conn.commit()
