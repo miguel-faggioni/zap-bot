@@ -18,6 +18,7 @@ import youtube_dl
 import shutil
 import os
 from moviepy.editor import *
+import random
 
 DOWNLOAD_ARCHIVE_FILE = 'videos/download.archive'
 PROFILE_PATH = '/home/miguel/.mozilla/firefox/y559xu9q.selenium'
@@ -206,7 +207,7 @@ class DownloadFromReddit:
                     # collapse the video
                     button.click()
                 except Exception as e:
-                    print(' > FAIL'.format(title))
+                    print(' > FAIL')
                     print(e)
 
             # if the quota was met
@@ -278,11 +279,18 @@ if __name__ == '__main__':
     bot.setUp()
 
     # download videos
-    videos = bot.downloadVideos(howMany=50,skipExisting=False)
-
+    videos = []
+    step = 10
+    howManyTotal = 50
+    for count in range(0,howManyTotal,step):
+        videos = videos + bot.downloadVideos(howMany=step,skipExisting=False)
+        
     # close browser
     bot.cleanUp()
 
+    # shuffle the videos
+    random.shuffle(videos)
+    
     # start the compilation
     compilation = VideoCompilation(videos)
 
@@ -296,4 +304,4 @@ if __name__ == '__main__':
     video = compilation.createCompilation(30*60)
 
     # save it
-    compilation.save(video,'teste.mp4',threads=2)
+    compilation.save(video,'first_compilation.mp4',threads=2)
