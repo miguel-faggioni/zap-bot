@@ -212,7 +212,7 @@ class DownloadFromReddit:
                     button.click()
                     # save to DB
                     self.db.run('''
-                        INSERT INTO videos VALUES ( '{link}' , '{title}' , {width} , {height} , null , '{filepath}' , null )
+                        INSERT INTO videos VALUES ( '{link}' , '{title}' , {width} , {height} , {width} , {height} , null , '{filepath}' , null )
                     '''.format(
                         link=url,
                         title=title,

@@ -8,13 +8,15 @@ TABLE = 'videos'
 TABLE_CREATION_SQL = '''
 CREATE TABLE IF NOT EXISTS {}
     (
-        link        TEXT,
-        title       TEXT,
-        width       INTEGER,
-        height      INTEGER,
-        duration    REAL,
-        filepath    TEXT,
-        compilation TEXT
+        link              TEXT,
+        title             TEXT,
+        width             INTEGER,
+        height            INTEGER,
+        original_width    INTEGER,
+        original_height   INTEGER,
+        duration          REAL,
+        filepath          TEXT,
+        compilation       TEXT
     )
 '''.format(TABLE)
 
