@@ -2,6 +2,8 @@ __pycache__/
 
 aux/
 videos/
+compilations
+
 *.mp4*
 
 *.log

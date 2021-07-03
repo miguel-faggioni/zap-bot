@@ -12,6 +12,8 @@ import os
 from moviepy.editor import *
 from sqlite import *
 
+COMPILATION_FOLDER = 'compilations'
+
 class VideoCompilation:
     def __init__(self, videos=[]):
         self.clips = [ VideoFileClip(video) for video in videos ]
@@ -50,7 +52,20 @@ def randomSubset(arr, length):
 if __name__ == '__main__':
     # get videos from DB
     sql = Sqlite()
-    result = sql.run('SELECT * FROM videos WHERE compilation IS NULL AND duration < {}'.format(2*60))
+    result = sql.run('''
+        SELECT * FROM videos
+        WHERE 
+            compilation IS NULL 
+            AND duration < {max_duration} 
+            AND (
+                original_width >= {min_width}
+                OR original_height >= {min_height}
+            )
+    '''.format(
+        max_duration=2*60,
+        min_width=1024,
+        min_height=576
+    ))
     videos = [ row['filepath'] for row in result ]
 
     # get a random subset of the videos
@@ -65,9 +80,15 @@ if __name__ == '__main__':
     # create compilation of up to 30min
     video = compilation.createCompilation(30*60)
 
+    # count how many compilations still exist
+    result = sql.run('SELECT COUNT(DISTINCT compilation) AS compilations FROM videos')
+    existingCount = [ row for rows in result ][0]['compilations']
+    
+    # generate compilation filename
+    compilation_filename = 'compilation_{}.mp4'.format(existingCount+1)
+    
     # save it
-    compilation_filename = 'first_compilation.mp4'
-    compilation.save(video,compilation_filename,threads=2)
+    compilation.save(video,os.path.join(COMPILATION_FOLDER,compilation_filename),threads=2)
 
     # update the videos on the DB
     sql = Sqlite()
@@ -78,4 +99,7 @@ if __name__ == '__main__':
             SET compilation = '{compilation}'
             WHERE 
                 filepath = '{filepath}'
-        '''.format(compilation=compilation_filename,filepath=filepath))
+        '''.format(
+            compilation=compilation_filename,
+            filepath=filepath
+        ))
