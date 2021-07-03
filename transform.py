@@ -37,7 +37,10 @@ class VideoTransform:
         for video in self.videos:
             video['clip'] = self.adjustSize(video['clip'],width,height)
 
-    def addSubtitle(self, clip, subtitle, howLong):
+    def addSubtitle(self, clip, subtitle, howLong, maxLength=15):
+        # trim the subtitle if it's too long
+        if len(subtitle) > maxLength:
+            subtitle = subtitle[:maxLength] + '...'
         # set how long the subtitle will show
         howLong = min(howLong,clip.duration)
         subs = [((0, howLong), subtitle)]
