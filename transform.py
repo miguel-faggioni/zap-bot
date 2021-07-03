@@ -9,6 +9,7 @@ Usage example:
 
 import random
 import os
+import shutil
 from moviepy.editor import *
 from moviepy.video.tools.subtitles import SubtitlesClip
 from sqlite import *
@@ -41,7 +42,7 @@ class VideoTransform:
         howLong = min(howLong,clip.duration)
         subs = [((0, howLong), subtitle)]
         # create clip with subtitle
-        subtitles = SubtitlesClip(subs, lambda txt: TextClip(txt, font='Arial', fontsize=72, color='white', stroke_color='black', stroke_width=2.5))
+        subtitles = SubtitlesClip(subs, lambda txt: TextClip(txt, font='Arial', fontsize=72, color='white', stroke_color='black'))
         # merge clip and subtitles
         result = CompositeVideoClip([clip, subtitles.set_position(('center','bottom'))])
         # return resulting clip
@@ -53,21 +54,21 @@ class VideoTransform:
             video['clip'] = self.addSubtitle(video['clip'],video['title'],howLong)
             print(' --> {}/{} subtitles added'.format(index+1,len(self.videos)))
 
-    def addOrigin(self,clip,origin,howLong):
+    def addSource(self,clip,source,howLong):
         howLong = min(howLong,clip.duration)
-        subs = [((0, howLong), origin)]        
-        # create clip with origin
+        subs = [((0, howLong), source)]        
+        # create clip with source
         subtitles = SubtitlesClip(subs, lambda txt: TextClip(txt, font='Arial', fontsize=24, color='white', bg_color='black'))
         # merge clip and text
         result = CompositeVideoClip([clip, subtitles.set_position((0,0))])
         # return resulting clip
         return result
 
-    def addOrigins(self, howLong=10):
-        print(' ----> Adding origins')
+    def addSources(self, howLong=10):
+        print(' ----> Adding sources')
         for index, video in enumerate(self.videos):
-            video['clip'] = self.addOrigin(video['clip'],video['link'],howLong)
-            print(' --> {}/{} origins added'.format(index+1,len(self.videos)))
+            video['clip'] = self.addSource(video['clip'],video['link'],howLong)
+            print(' --> {}/{} sources added'.format(index+1,len(self.videos)))
             
     def save(self, clip, filename, threads=1):
         filepath = os.path.join(os.getcwd(),filename)
@@ -91,10 +92,12 @@ if __name__ == '__main__':
     transform.addSubtitles()
     
     # add link to original
-    transform.addOrigins()
+    transform.addSources()
 
-    # save the updated video
+    # backup the original videos 
+    # and save the updated versions
     for video in transform.videos:
+        shutil.move(video['filepath'],video['filepath']+'.original')
         transform.save(video['clip'],video['filepath'])
     
     # update their durations and sizes on the DB
@@ -109,5 +112,10 @@ if __name__ == '__main__':
                 height   = {height}
             WHERE 
                 filepath = '{filepath}'
-        '''.format(duration=duration,filepath=filepath,width=width,height=height))
+        '''.format(
+            duration=duration,
+            filepath=filepath,
+            width=width,
+            height=height
+        ))
         
