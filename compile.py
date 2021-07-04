@@ -62,9 +62,9 @@ if __name__ == '__main__':
                 OR original_height >= {min_height}
             )
     '''.format(
-        max_duration=2*60,
-        min_width=1024,
-        min_height=576
+        max_duration=60,
+        min_width=1280,
+        min_height=720
     ))
     videos = [ row['filepath'] for row in result ]
 
@@ -74,15 +74,12 @@ if __name__ == '__main__':
     # start the compilation
     compilation = VideoCompilation(videos)
 
-    # resize clips
-    compilation.adjustSizes()
-
     # create compilation of up to 30min
     video = compilation.createCompilation(30*60)
 
     # count how many compilations still exist
-    result = sql.run('SELECT COUNT(DISTINCT compilation) AS compilations FROM videos')
-    existingCount = [ row for rows in result ][0]['compilations']
+    rows = sql.run('SELECT COUNT(DISTINCT compilation) AS compilations FROM videos')
+    existingCount = [ row for row in rows ][0]['compilations']
     
     # generate compilation filename
     compilation_filename = 'compilation_{}.mp4'.format(existingCount+1)
@@ -93,7 +90,7 @@ if __name__ == '__main__':
     # update the videos on the DB
     sql = Sqlite()
     for video in videos:
-        filepath = video['filepath']
+        filepath = video
         sql.run('''
             UPDATE videos 
             SET compilation = '{compilation}'
