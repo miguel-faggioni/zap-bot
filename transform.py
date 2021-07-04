@@ -83,7 +83,7 @@ if __name__ == '__main__':
     # get videos from DB
     sql = Sqlite()
     result = sql.run('SELECT * FROM videos WHERE duration IS NULL')
-    videos = [ row for row in result ]
+    videos = [ row for row in result if os.path.isfile(row['filepath']) ]
 
     # convert them to clips
     transform = VideoTransform(videos)
