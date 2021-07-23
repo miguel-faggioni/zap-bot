@@ -7,3 +7,5 @@ compilations
 *.mp4*
 
 *.log
+
+client_secrets.json
