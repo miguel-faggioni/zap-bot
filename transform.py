@@ -86,7 +86,8 @@ if __name__ == '__main__':
     videos = [ row for row in result if os.path.isfile(row['filepath']) ]
 
     # convert them to clips
-    transform = VideoTransform(videos)
+    limit = 10
+    transform = VideoTransform(videos[:limit])
 
     # resize them
     transform.adjustSizes()
