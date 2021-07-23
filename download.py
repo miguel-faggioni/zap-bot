@@ -240,15 +240,15 @@ if __name__ == '__main__':
     bot = DownloadFromReddit()
     bot.setUp()
 
-    '''
+    #'''
     # download videos
     videos = []
-    step = 10
-    howManyTotal = 50
+    step = 25
+    howManyTotal = 100
     for count in range(0,howManyTotal,step):
         videos = videos + bot.downloadVideos(howMany=step,skipExisting=True)
-    '''
-    videos = bot.downloadVideos(howMany=5,skipExisting=False)
+    #'''
+    #videos = bot.downloadVideos(howMany=5,skipExisting=False)
         
     # close browser
     bot.cleanUp()
