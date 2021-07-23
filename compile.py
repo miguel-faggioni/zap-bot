@@ -69,7 +69,8 @@ if __name__ == '__main__':
     videos = [ row['filepath'] for row in result ]
 
     # get a random subset of the videos
-    videos = randomSubset(videos, 30)
+    if len(videos) > 30:
+        videos = randomSubset(videos, 30)
     
     # start the compilation
     compilation = VideoCompilation(videos)
